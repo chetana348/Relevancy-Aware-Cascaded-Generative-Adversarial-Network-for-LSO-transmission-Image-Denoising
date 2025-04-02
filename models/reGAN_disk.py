@@ -1,122 +1,131 @@
-# TransUPlus-style generator combining CNN-based downsampling with transformer-based feature refinement
+# --------------------------------------------
+# PSEUDOCODE: reGAN_older version
+# Includes UNet encoder-decoder blocks, transformer bottlenecks,
+# positional embeddings, and variants included
+# --------------------------------------------
 
-class DownsampleBlock:
-    def __init__(self, in_channels, out_channels, normalize=True, dropout=0.0):
-        # Applies: Conv2D → [InstanceNorm] → LeakyReLU → [Dropout]
-        pass
+# Function: Initialize weights for modules
+# If module is a convolution, initialize with normal distribution
+# If module is batch norm, initialize weight with mean=1, std=0.02
+Function InitializeWeightsRandomly(module):
+    If module is convolution:
+        Apply normal init with mean 0.0 and std 0.02
+    Else if module is batch normalization:
+        Apply normal init with mean 1.0 and std 0.02
+        Set bias to zero
 
-    def forward(self, x):
-        return downsampled_x
+# Module: Downsampling unit for U-Net
+# Applies conv -> (optional norm) -> activation -> (optional dropout)
+Class DownBlock:
+    Constructor(inputs, outputs, use_norm=True, use_dropout=False):
+        Define convolutional operation with stride 2
+        If normalization enabled, apply normalization
+        Apply LeakyReLU activation
+        If dropout enabled, apply dropout
+    Method Forward(input_tensor):
+        Pass input through defined layers and return result
 
-class UpsampleBlock:
-    def __init__(self, in_channels, out_channels, dropout=0.0):
-        # Applies: ConvTranspose2D → InstanceNorm → ReLU → [Dropout]
-        pass
+# Module: Upsampling unit for U-Net
+# Applies deconv -> norm -> activation -> optional dropout -> skip concat
+Class UpBlock:
+    Constructor(inputs, outputs, use_dropout=False):
+        Define transposed convolution for upsampling
+        Apply normalization and ReLU
+        If dropout enabled, apply dropout
+    Method Forward(upsampled, skip_connection):
+        Apply model to upsampled tensor
+        Concatenate with skip_connection along channel axis
+        Return result
 
-    def forward(self, x, skip_connection):
-        # Concatenates skip features and upsampled output
-        return merged_x
+# Module: Generator block using plain U-Net
+# Symmetrical encoder-decoder with skip connections
+Class GeneratorUNet:
+    Constructor(input_channels, output_channels):
+        Define multiple downsampling blocks for encoding
+        Define multiple upsampling blocks for decoding
+        Define final upsampling and output layer with Tanh
+    Method Forward(input_tensor):
+        Pass input through down blocks, storing skip connections
+        Pass through up blocks using skip connections
+        Return final output tensor
 
-class MLPBlock:
-    def __init__(self, dim, hidden_dim, dropout=0.0):
-        # Applies: Linear → GELU → Linear → Dropout
-        pass
+# Module: Transformer-enhanced U-Net
+# Combines CNN encoder-decoder with transformer bottleneck
+Class HybridTransformerUNet:
+    Constructor(parameters for transformer and UNet):
+        Define initial CNN encoder and decoder blocks
+        Define separate small encoder for transformer (3-stage down)
+        Flatten transformer encoder output and apply linear transformation
+        Add positional embeddings at three scales
+        Insert transformer encoders at increasing resolution
+        After transformer processing, reshape to feature map and decode
+        Combine transformer output with input and send to second UNet pass
+    Method Forward(input_image):
+        Encode with small CNN stack for transformer
+        Flatten and embed transformer features
+        Add positional encodings
+        Pass through transformer stages with upsampling
+        Reshape transformer output to spatial tensor
+        Decode transformer features back to image-like tensor
+        Blend with input and pass through U-Net encoder-decoder path
+        Return final output
 
-    def forward(self, x):
-        return x
+# Variant: Cascaded hybrid architecture (ABAB)
+# Apply two transformer+UNet blocks sequentially
+Class CascadeABAB:
+    Constructor():
+        Define two instances of HybridTransformerUNet
+    Method Forward(input_image):
+        First_output = Block1(input_image)
+        Second_input = Average(input_image, First_output)
+        Final_output = Block2(Second_input)
+        Return Final_output
 
-class SelfAttention:
-    def __init__(self, dim, heads):
-        # Multi-head scaled dot-product attention
-        pass
+# Variant: Cascaded hybrid architecture (ABABAB)
+# Apply three hybrid blocks in sequence, each fed with average of prior outputs
+Class CascadeABABAB:
+    Constructor():
+        Create three HybridTransformerUNet instances
+    Method Forward(input_tensor):
+        Result1 = BlockA1(input_tensor)
+        Result2 = BlockA2(Average(input_tensor, Result1))
+        Result3 = BlockA3(Average(input_tensor, Result1, Result2))
+        Return Result3
 
-    def forward(self, x):
-        return attended_x
+# Variant: Two transformer passes followed by CNN U-Net (AAB)
+Class VariantAAB:
+    Constructor():
+        Define transformer branch as in HybridTransformerUNet
+        Duplicate transformer pathway to form two sequential passes
+        After two transformer passes, apply CNN U-Net decoder
+    Method Forward(input_image):
+        First_pass = TransformerBlock(input_image)
+        Second_input = Average(input_image, First_pass)
+        Second_pass = TransformerBlock(Second_input)
+        Final_input = Average(input_image, Second_input)
+        Final_output = U-Net on Final_input
+        Return Final_output
 
-class TransformerBlock:
-    def __init__(self, dim, heads, mlp_ratio=4, dropout=0.0):
-        # LayerNorm → SelfAttention → LayerNorm → MLP, with residuals
-        pass
+# Variant: One transformer pass, then two CNN passes (ABB)
+Class VariantABB:
+    Constructor():
+        First block is transformer-enhanced U-Net
+        Second block is plain GeneratorUNet (CNN only)
+    Method Forward(input_data):
+        First_pass = TransformerBlock(input_data)
+        Merge1 = Average(input_data, First_pass)
+        CNN_Pass1 = U-Net on Merge1
+        Merge2 = Average(Merge1, CNN_Pass1)
+        Final_output = Second GeneratorUNet on Merge2
+        Return Final_output
 
-    def forward(self, x):
-        return x
-
-class TransformerStage:
-    def __init__(self, num_layers, dim, heads, mlp_ratio, dropout):
-        # Stack multiple Transformer blocks
-        self.layers = [TransformerBlock(dim, heads, mlp_ratio, dropout) for _ in range(num_layers)]
-
-    def forward(self, x):
-        for layer in self.layers:
-            x = layer.forward(x)
-        return x
-
-class TransformerUNetGenerator:
-    def __init__(self):
-        # Downsampling path (UNet)
-        self.down1 = DownsampleBlock(1, 32)
-        self.down2 = DownsampleBlock(32, 32)
-        self.down3 = DownsampleBlock(32, 3)
-
-        # Flatten → Linear → Patch embedding
-        self.token_embed = LinearProjector()
-
-        # Positional embeddings
-        self.pos_embed_stage1 = LearnablePositionEmbedding()
-        self.pos_embed_stage2 = LearnablePositionEmbedding()
-        self.pos_embed_stage3 = LearnablePositionEmbedding()
-
-        # Transformer encoders at three resolutions
-        self.transformer1 = TransformerStage(depth=5, dim=384, heads=4, mlp_ratio=4, dropout=0.5)
-        self.transformer2 = TransformerStage(depth=4, dim=96, heads=4, mlp_ratio=4, dropout=0.5)
-        self.transformer3 = TransformerStage(depth=2, dim=24, heads=4, mlp_ratio=4, dropout=0.5)
-
-        # Project back to image space
-        self.reconstruct_conv = ConvProjection()
-
-        # Upsampling path (UNet decoder)
-        self.up1 = UpsampleBlock(3, 32)
-        self.up2 = UpsampleBlock(64, 32)
-        self.up3 = UpsampleBlock(64, 1)
-
-        # Final refinement conv
-        self.final_output = Conv2DLayer(in_channels=2, out_channels=1)
-
-    def forward(self, x):
-        # Encoder path
-        x1 = self.down1(x)  # e.g., [B, 32, 128, 128]
-        x2 = self.down2(x1) # e.g., [B, 32, 64, 64]
-        x3 = self.down3(x2) # e.g., [B, 3, 32, 32]
-
-        # Tokenization
-        tokens = self.token_embed(x3)  # Flattened patch sequence
-
-        # Transformer stage 1
-        tokens += self.pos_embed_stage1
-        tokens = self.transformer1(tokens)
-
-        # Upsample tokens
-        tokens = UpsampleTokens(tokens)  # To 64x64
-        tokens += self.pos_embed_stage2
-        tokens = self.transformer2(tokens)
-
-        tokens = UpsampleTokens(tokens)  # To 128x128
-        tokens += self.pos_embed_stage3
-        tokens = self.transformer3(tokens)
-
-        # Project tokens to feature map
-        features = self.reconstruct_conv(tokens)
-
-        # Decoder path with skip connections
-        x = self.up1(features, x2)
-        x = self.up2(x, x1)
-        x = self.up3(x, x)
-
-        # Final 1×1 conv to produce output
-        return self.final_output(x)
-
-# Entry point
-def main():
-    model = TransformerUNetGenerator()
-    input = DummyImage(batch_size=2, size=(1, 256, 256))
-    output = model.forward(input)
+# Module: Discriminator (PatchGAN)
+# Standard PatchGAN with downsampling conv layers
+Class PatchDiscriminator:
+    Constructor(input_channels):
+        Define sequence of convolutional blocks
+        Each block downscales input using stride-2 convolutions
+        Final conv outputs a single-channel map
+    Method Forward(input_image_1, input_image_2):
+        Concatenate inputs along channel axis
+        Pass through network and return patch-wise output
