@@ -1,7 +1,7 @@
 # PSEUDOCODE: reGAN
 # This pseudocode illustrates a deep learning architecture for PET to CT (denoising) tasks.
 # It includes residual convolutional blocks, U-Net variants with multiple outputs, a generator with ResNet backbone, and a patch-based discriminator.
-# All names and variables have been changed for clarity and distinction.
+
 
 CLASS BasicResidualBlock:
     INIT(input_features):
