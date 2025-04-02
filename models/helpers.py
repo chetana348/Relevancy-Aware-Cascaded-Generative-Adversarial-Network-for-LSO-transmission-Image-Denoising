@@ -1,4 +1,4 @@
-# Pseudocode for multi-stage image refinement with pixel-wise relevancy guidance
+# Pseudocode for helpers - to be imported to reGAN
 
 class FeatureBlock:
     def __init__(self, input_size, output_size):
