@@ -43,7 +43,7 @@ To run the pseudocode and adapt it to your environment, the following dependenci
 
 To work with the pseudocode in this repository, structure your target (ground truth) and noisy (input) images in seperate folders with the same file name. The target and input images should be registered to avoid shifts in the model's outputs. Normalization between std 0.5 and mean 0.5 was performed for uniformity. 
 
-##📁 Repository Layout
+## 📁 Repository Layout
 
 - `losses/`  
   Contains pseudocode implementations for various loss functions and evaluation metrics used during training and validation. This includes adversarial loss, L1 loss, Dice similarity metrics, and other custom components.
