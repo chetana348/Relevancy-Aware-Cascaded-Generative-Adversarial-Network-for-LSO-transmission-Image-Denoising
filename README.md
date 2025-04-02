@@ -43,6 +43,8 @@ To run the pseudocode and adapt it to your environment, the following dependenci
 
 To work with the pseudocode in this repository, structure your target (ground truth) and noisy (input) images in seperate folders with the same file name. The target and input images should be registered to avoid shifts in the model's outputs. Normalization between std 0.5 and mean 0.5 was performed for uniformity. 
 
+---
+
 ## 📁 Repository Layout
 
 - `losses/`  
@@ -59,4 +61,11 @@ To work with the pseudocode in this repository, structure your target (ground tr
 - `train_reGAN/`  
   Contains pseudocode to illustrate the training pipeline, including loading datasets, initializing models, configuring loss functions, and running the training loop.
 
+---
 
+## 📄 License
+
+This repository and its contents are proprietary and protected under intellectual property rights owned by **Siemens Healthineers**.  
+All code, pseudocode, documentation, and related materials are provided solely for illustrative and academic reference purposes.
+
+---
